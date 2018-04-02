@@ -13,6 +13,7 @@ struct ParamVideo{
     vector<Mat> x;
     vector<Mat> y;
     String nomfenetre;
+    bool maj = true;
 };
 
 
@@ -42,7 +43,7 @@ int main(int argc, char *argv[])
     p.nomfenetre = "video";
     namedWindow(p.nomfenetre);
     p.fLow = 0;
-    p.fHigh = 20;
+    p.fHigh = 50;
     p.typeFiltre = 0;
     p.ordre = 2;
     p.filter = NULL;
@@ -54,17 +55,22 @@ int main(int argc, char *argv[])
     int  code = 0;
     Mat frameUSB;
     Mat frame;
-    v >> frameUSB;
-    frameUSB.convertTo(frame, CV_32F);
-    for (int i = 0; i <= 20; i++)
-    {
-        p.x.push_back(frame.clone());
-        p.y.push_back(frame.clone());
-    }
     while (code != 27)
     {
         v >> frameUSB;
         frameUSB.convertTo(frame, CV_32F);
+        if (p.maj)
+        {
+            p.x.clear();
+            p.y.clear();
+            for (int i = 0; i <= 20; i++)
+            {
+                p.x.push_back(Mat::zeros(frame.size(), frame.type()));
+                p.y.push_back(Mat::zeros(frame.size(), frame.type()));
+            }
+            p.maj = false;
+
+        }
         p.x[0] = frame.clone();
         Mat r;
         r = p.filter->b[0] * p.x[0];
@@ -95,7 +101,10 @@ void MAJFiltre(int x, void * r)
     ParamVideo *p= (ParamVideo*) r;
     delete p->filter;
     vector<double> f = { p->fLow / 100.0,p->fHigh / 100.0 };
+    if (fabs(f[1] - 0.5) < 0.01)
+        f[1] = 0.499;
     p->filter = new IIRFilter("butt", p->ordre, 1, f);
+    p->maj = true;
 }
 
 void AjouteGlissiere(String nomGlissiere, String nomFenetre, int minGlissiere, int maxGlissiere, int valeurDefaut, int *valGlissiere, void(*f)(int, void *), void *r)
